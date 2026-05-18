@@ -1,0 +1,171 @@
+#titlebar .titlebar-button,
+#nav-bar .titlebar-button,
+#TabsToolbar .titlebar-button,
+#toolbar-menubar .titlebar-button,
+.titlebar-buttonbox .titlebar-button {
+  -moz-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  list-style-image: none !important;
+  min-width: 16px !important;
+  width: 16px !important;
+  max-width: 16px !important;
+  min-height: 16px !important;
+  height: 16px !important;
+  max-height: 16px !important;
+  padding: 0 !important;
+  margin: 0 4px !important;
+}
+
+#titlebar .titlebar-buttonbox,
+#nav-bar .titlebar-buttonbox,
+#TabsToolbar .titlebar-buttonbox,
+#toolbar-menubar .titlebar-buttonbox,
+.titlebar-buttonbox {
+  gap: 0 !important;
+  column-gap: 0 !important;
+  align-items: center !important;
+}
+
+#titlebar .titlebar-button .toolbarbutton-icon,
+#nav-bar .titlebar-button .toolbarbutton-icon,
+#TabsToolbar .titlebar-button .toolbarbutton-icon,
+#toolbar-menubar .titlebar-button .toolbarbutton-icon,
+.titlebar-buttonbox .titlebar-button .toolbarbutton-icon {
+  opacity: 0 !important;
+  list-style-image: none !important;
+}
+
+#TabsToolbar #titlebar-close,
+#TabsToolbar .titlebar-close,
+#toolbar-menubar #titlebar-close,
+#toolbar-menubar .titlebar-close,
+.titlebar-buttonbox #titlebar-close,
+.titlebar-buttonbox .titlebar-close,
+#titlebar #titlebar-close,
+#titlebar .titlebar-close,
+#nav-bar #titlebar-close,
+#nav-bar .titlebar-close {
+  background: url("titlebuttons/titlebutton-close-dark.svg") no-repeat center / 16px 16px !important;
+}
+
+#TabsToolbar #titlebar-min,
+#TabsToolbar .titlebar-min,
+#toolbar-menubar #titlebar-min,
+#toolbar-menubar .titlebar-min,
+.titlebar-buttonbox #titlebar-min,
+.titlebar-buttonbox .titlebar-min,
+#titlebar #titlebar-min,
+#titlebar .titlebar-min,
+#nav-bar #titlebar-min,
+#nav-bar .titlebar-min {
+  background: url("titlebuttons/titlebutton-minimize-dark.svg") no-repeat center / 16px 16px !important;
+}
+
+#TabsToolbar #titlebar-max,
+#TabsToolbar .titlebar-max,
+#toolbar-menubar #titlebar-max,
+#toolbar-menubar .titlebar-max,
+.titlebar-buttonbox #titlebar-max,
+.titlebar-buttonbox .titlebar-max,
+#titlebar #titlebar-max,
+#titlebar .titlebar-max,
+#nav-bar #titlebar-max,
+#nav-bar .titlebar-max {
+  background: url("titlebuttons/titlebutton-maximize-dark.svg") no-repeat center / 16px 16px !important;
+}
+
+#TabsToolbar #titlebar-restore,
+#TabsToolbar .titlebar-restore,
+#toolbar-menubar #titlebar-restore,
+#toolbar-menubar .titlebar-restore,
+.titlebar-buttonbox #titlebar-restore,
+.titlebar-buttonbox .titlebar-restore,
+#titlebar #titlebar-restore,
+#titlebar .titlebar-restore,
+#nav-bar #titlebar-restore,
+#nav-bar .titlebar-restore,
+:root[sizemode="maximized"] #TabsToolbar #titlebar-max,
+:root[sizemode="maximized"] #TabsToolbar .titlebar-max,
+:root[sizemode="maximized"] #toolbar-menubar #titlebar-max,
+:root[sizemode="maximized"] #toolbar-menubar .titlebar-max,
+:root[sizemode="maximized"] .titlebar-buttonbox #titlebar-max,
+:root[sizemode="maximized"] .titlebar-buttonbox .titlebar-max,
+:root[sizemode="maximized"] #titlebar #titlebar-max,
+:root[sizemode="maximized"] #titlebar .titlebar-max,
+:root[sizemode="maximized"] #nav-bar #titlebar-max,
+:root[sizemode="maximized"] #nav-bar .titlebar-max {
+  background: url("titlebuttons/titlebutton-maximize-dark.svg") no-repeat center / 16px 16px !important;
+}
+
+#TabsToolbar #titlebar-close:hover,
+#TabsToolbar .titlebar-close:hover,
+#toolbar-menubar #titlebar-close:hover,
+#toolbar-menubar .titlebar-close:hover,
+.titlebar-buttonbox #titlebar-close:hover,
+.titlebar-buttonbox .titlebar-close:hover,
+#titlebar #titlebar-close:hover,
+#titlebar .titlebar-close:hover,
+#nav-bar #titlebar-close:hover,
+#nav-bar .titlebar-close:hover {
+  background-image: url("titlebuttons/titlebutton-close-hover-dark.svg") !important;
+}
+
+#titlebar #titlebar-min:hover,
+#titlebar .titlebar-min:hover,
+#nav-bar #titlebar-min:hover,
+#nav-bar .titlebar-min:hover {
+  background-image: url("titlebuttons/titlebutton-minimize-hover-dark.svg") !important;
+}
+
+#titlebar #titlebar-max:hover,
+#titlebar .titlebar-max:hover,
+#nav-bar #titlebar-max:hover,
+#nav-bar .titlebar-max:hover {
+  background-image: url("titlebuttons/titlebutton-maximize-hover-dark.svg") !important;
+}
+
+#titlebar #titlebar-restore:hover,
+#titlebar .titlebar-restore:hover,
+#nav-bar #titlebar-restore:hover,
+#nav-bar .titlebar-restore:hover,
+:root[sizemode="maximized"] #titlebar #titlebar-max:hover,
+:root[sizemode="maximized"] #titlebar .titlebar-max:hover,
+:root[sizemode="maximized"] #nav-bar #titlebar-max:hover,
+:root[sizemode="maximized"] #nav-bar .titlebar-max:hover {
+  background-image: url("titlebuttons/titlebutton-unmaximize-hover-dark.svg") !important;
+}
+
+#titlebar #titlebar-close:active,
+#titlebar .titlebar-close:active,
+#nav-bar #titlebar-close:active,
+#nav-bar .titlebar-close:active {
+  background-image: url("titlebuttons/titlebutton-close-active-dark.svg") !important;
+}
+
+#titlebar #titlebar-min:active,
+#titlebar .titlebar-min:active,
+#nav-bar #titlebar-min:active,
+#nav-bar .titlebar-min:active {
+  background-image: url("titlebuttons/titlebutton-minimize-active-dark.svg") !important;
+}
+
+#titlebar #titlebar-max:active,
+#titlebar .titlebar-max:active,
+#nav-bar #titlebar-max:active,
+#nav-bar .titlebar-max:active {
+  background-image: url("titlebuttons/titlebutton-maximize-active-dark.svg") !important;
+}
+
+#titlebar #titlebar-restore:active,
+#titlebar .titlebar-restore:active,
+#nav-bar #titlebar-restore:active,
+#nav-bar .titlebar-restore:active,
+:root[sizemode="maximized"] #titlebar #titlebar-max:active,
+:root[sizemode="maximized"] #titlebar .titlebar-max:active,
+:root[sizemode="maximized"] #nav-bar #titlebar-max:active,
+:root[sizemode="maximized"] #nav-bar .titlebar-max:active {
+  background-image: url("titlebuttons/titlebutton-unmaximize-active-dark.svg") !important;
+}
