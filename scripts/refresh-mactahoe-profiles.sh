@@ -152,6 +152,7 @@ install_firefox_profile_theme() {
 
   need_file "${firefox_source}/userChrome.css"
   need_file "${firefox_source}/userContent.css"
+  need_file "${firefox_source}/customChrome.css"
 
   mkdir -p "${chrome_dir}"
   if [[ ! -e "${chrome_dir}/.mactahoe-backup" ]]; then
@@ -161,6 +162,7 @@ install_firefox_profile_theme() {
 
   rm -rf "${chrome_dir}/MacTahoe"
   cp -a "${firefox_source}/MacTahoe" "${chrome_dir}/"
+  cp -a "${firefox_source}/customChrome.css" "${chrome_dir}/"
   cp -a "${firefox_source}/userChrome.css" "${chrome_dir}/userChrome.css"
   cp -a "${firefox_source}/userContent.css" "${chrome_dir}/userContent.css"
 
