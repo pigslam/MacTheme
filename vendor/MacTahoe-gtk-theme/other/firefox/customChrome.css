@@ -1,3 +1,48 @@
 
-/* Add your own custom styles here */
+/* MacTheme Firefox traffic-light placement */
+:root {
+  --mactheme-firefox-traffic-left: 18px;
+  --mactheme-firefox-traffic-right: 18px;
+}
 
+:root[tabsintitlebar] #titlebar .titlebar-buttonbox-container,
+:root[customtitlebar] #titlebar .titlebar-buttonbox-container,
+:root[tabsintitlebar] #nav-bar .titlebar-buttonbox-container,
+:root[customtitlebar] #nav-bar .titlebar-buttonbox-container,
+:root[tabsintitlebar] #TabsToolbar .titlebar-buttonbox-container,
+:root[customtitlebar] #TabsToolbar .titlebar-buttonbox-container,
+:root[tabsintitlebar] #toolbar-menubar .titlebar-buttonbox-container,
+:root[customtitlebar] #toolbar-menubar .titlebar-buttonbox-container {
+  margin-left: var(--mactheme-firefox-traffic-left) !important;
+  margin-right: var(--mactheme-firefox-traffic-right) !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+:root[tabsintitlebar] #titlebar .titlebar-buttonbox,
+:root[customtitlebar] #titlebar .titlebar-buttonbox,
+:root[tabsintitlebar] #nav-bar .titlebar-buttonbox,
+:root[customtitlebar] #nav-bar .titlebar-buttonbox,
+:root[tabsintitlebar] #TabsToolbar .titlebar-buttonbox,
+:root[customtitlebar] #TabsToolbar .titlebar-buttonbox,
+:root[tabsintitlebar] #toolbar-menubar .titlebar-buttonbox,
+:root[customtitlebar] #toolbar-menubar .titlebar-buttonbox {
+  min-height: 32px !important;
+  align-items: center !important;
+}
+
+:root[tabsintitlebar] #titlebar .titlebar-button,
+:root[customtitlebar] #titlebar .titlebar-button,
+:root[tabsintitlebar] #nav-bar .titlebar-button,
+:root[customtitlebar] #nav-bar .titlebar-button,
+:root[tabsintitlebar] #TabsToolbar .titlebar-button,
+:root[customtitlebar] #TabsToolbar .titlebar-button,
+:root[tabsintitlebar] #toolbar-menubar .titlebar-button,
+:root[customtitlebar] #toolbar-menubar .titlebar-button {
+  margin-inline: 3px !important;
+}
+
+:root[tabsintitlebar] #TabsToolbar .titlebar-spacer[type="pre-tabs"],
+:root[customtitlebar] #TabsToolbar .titlebar-spacer[type="pre-tabs"] {
+  width: 10px !important;
+}
