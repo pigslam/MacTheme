@@ -286,6 +286,29 @@ gnome_extensions_knows_uuid() {
   gnome-extensions list 2>/dev/null | grep -Fxq "${uuid}"
 }
 
+dash_to_dock_schema_dir() {
+  local dir
+  for dir in \
+    "${HOME}/.local/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com/schemas" \
+    "/usr/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com/schemas"; do
+    [[ -f "${dir}/gschemas.compiled" ]] && {
+      printf '%s\n' "${dir}"
+      return 0
+    }
+  done
+
+  return 1
+}
+
+apply_dock_launcher_position() {
+  local schema_dir
+
+  schema_dir="$(dash_to_dock_schema_dir)" || return 0
+  if gsettings --schemadir "${schema_dir}" writable org.gnome.shell.extensions.dash-to-dock show-apps-at-top >/dev/null 2>&1; then
+    gsettings --schemadir "${schema_dir}" set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true || true
+  fi
+}
+
 os_field() {
   local key="$1"
   if [[ -r /etc/os-release ]]; then
@@ -532,6 +555,7 @@ if [[ "${APPLY_SETTINGS}" == "yes" ]]; then
   gsettings set org.gnome.desktop.interface cursor-theme "${CURSOR_THEME}"
   gsettings set org.gnome.desktop.interface color-scheme "${color_scheme}" || true
   gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
+  apply_dock_launcher_position
 
   if user_theme_uuid="$(first_user_theme_uuid)"; then
     if gnome_extensions_knows_uuid "${user_theme_uuid}"; then
