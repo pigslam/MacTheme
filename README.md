@@ -48,6 +48,25 @@ Useful options:
 ./scripts/deploy-mactahoe.sh --gtk-all
 ```
 
+## macOS-Style Keyboard Shortcuts
+
+For macOS-style input behavior as well as appearance, use
+[Toshy](https://github.com/RedBearAK/Toshy) as an optional companion to this
+theme. Toshy provides application-aware mappings for shortcuts such as
+`Cmd+A`, `Cmd+Z`, `Cmd+X`, `Cmd+C`, and `Cmd+V`, including the different
+behavior expected in terminal applications.
+
+On Wayland GNOME, Toshy requires at least one supported GNOME Shell extension
+to identify the focused application:
+
+- [Xremap](https://extensions.gnome.org/extension/5060/xremap/)
+- [Window Calls Extended](https://extensions.gnome.org/extension/4974/window-calls-extended/)
+- [Focused Window D-Bus](https://extensions.gnome.org/extension/5592/focused-window-d-bus/)
+
+Follow Toshy's current installation and compatibility guidance when choosing
+an extension. This theme bundle does not install or configure Toshy; the two
+projects can be installed and updated independently.
+
 Firefox and Thunderbird draw their own titlebar controls, so the deploy script
 installs a small `userChrome` override into detected profiles. Launch those apps
 once before deploying so their profiles exist, then restart them afterwards.
