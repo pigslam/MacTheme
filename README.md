@@ -51,7 +51,7 @@ Useful options:
 ## macOS-Style Keyboard Shortcuts
 
 For macOS-style input behavior as well as appearance, use
-[Toshy](https://github.com/RedBearAK/Toshy) as an optional companion to this
+[Toshy](https://github.com/RedBearAK/toshy) as an optional companion to this
 theme. Toshy provides application-aware mappings for shortcuts such as
 `Cmd+A`, `Cmd+Z`, `Cmd+X`, `Cmd+C`, and `Cmd+V`, including the different
 behavior expected in terminal applications.
