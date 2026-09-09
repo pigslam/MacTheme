@@ -268,7 +268,7 @@ $maximized_radius_style: 0 0 $maximized_radius $maximized_radius;
     }
   }
 
-  &.solid-csd { border-radius: 0; }
+  &.solid-csd { border-radius: $wm_radius; }
 }
 
 .popup.background {
@@ -4226,7 +4226,7 @@ decoration {
     &, &.backdrop { box-shadow: $wm_outline; }
 
     &.maximized, &.tiled {
-      border-radius: 0;
+      border-radius: $maximized_radius;
       box-shadow: none;
     }
   }

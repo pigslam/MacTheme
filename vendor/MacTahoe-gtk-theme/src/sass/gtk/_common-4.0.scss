@@ -5450,13 +5450,13 @@ window {
     &.tiled-left,
     &.tiled-right,
     &.tiled-bottom {
-      border-radius: 0;
+      border-radius: $maximized_radius;
       outline: none;
     }
 
     &.maximized,
     &.fullscreen {
-      border-radius: 0;
+      border-radius: $maximized_radius;
       outline: none;
       box-shadow: none;
       transition: none;
@@ -5477,8 +5477,8 @@ window {
         &.maximized,
         &.fullscreen {
           headerbar {
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
+            border-top-left-radius: $maximized_radius;
+            border-top-right-radius: $maximized_radius;
             box-shadow: none;
           }
         }
@@ -5488,7 +5488,7 @@ window {
 
   &.solid-csd {
     border: 1px solid $header_border;
-    border-radius: 0;
+    border-radius: $wm_radius;
     margin: 0;
     background-color: $header_bg;
     box-shadow: none;
