@@ -4210,7 +4210,7 @@ decoration {
   }
 
   .fullscreen & {
-    border-radius: 0;
+    border-radius: $maximized_radius;
     box-shadow: none;
   }
 
@@ -4252,7 +4252,7 @@ decoration {
 
   .solid-csd & {
     border: 1px solid $header_border;
-    border-radius: 0;
+    border-radius: $wm_radius;
     margin: 0;
     background-color: $header_bg;
     box-shadow: none;

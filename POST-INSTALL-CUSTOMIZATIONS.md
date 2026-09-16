@@ -44,6 +44,9 @@ Firefox/Thunderbird chrome override:
 - `customChrome.css` places titlebar buttons 18 px from either edge, centers
   them in a 32 px button box, gives buttons 3 px inline spacing, and reserves
   a 10 px pre-tab spacer.
+- `rounded-window-maximized.css` keeps Firefox clipped to the theme's 12 px
+  window radius when GNOME marks it maximized or tiled, while leaving true
+  fullscreen mode unclipped.
 - The profile installer copies `customChrome.css` as well as the MacTahoe
   theme directory and enables the required custom stylesheet preferences.
 - Firefox profiles additionally receive compact density, titlebar drawing,
@@ -54,6 +57,88 @@ Firefox/Thunderbird chrome override:
 
 The refresh script covers both applications so this work survives new
 profiles and app updates.
+
+#### Firefox maximized and tiled window corners
+
+Firefox needs an additional application-level fix beyond the GTK theme. On
+Linux, Firefox draws browser chrome into its own child surface. Its packaged
+`browser.css` reads the GTK titlebar radius through
+`env(-moz-gtk-csd-titlebar-radius)`, but Firefox 155 only applies that rounded
+clip when the window has `sizemode="normal"` and does not have the `[tiled]`
+attribute. Maximizing the window or asking GNOME to fill/tile an area therefore
+removes Firefox's own clip even when the surrounding GTK theme correctly keeps
+maximized and tiled decorations rounded.
+
+The working fix has several required pieces:
+
+1. GTK 3 must expose the same nonzero radius for normal, maximized, tiled,
+   fullscreen, and solid-CSD decorations. The source of truth is
+   `src/sass/_variables.scss` plus the decoration selectors in
+   `src/sass/gtk/_common-3.0.scss`.
+2. The GTK release archives must be rebuilt after changing Sass. The top-level
+   deploy script extracts `vendor/MacTahoe-gtk-theme/release/*.tar.xz`; it does
+   not compile Sass. A source-only change has no effect on a deployed machine.
+3. Firefox must have
+   `widget.gtk.rounded-bottom-corners.enabled=true`. The profile refresh script
+   writes that preference into each detected profile's `user.js`.
+4. Firefox's native browser-document clip must be overridden. Styling
+   `#nav-bar`, `#TabsToolbar`, `#navigator-toolbox`, or the root element alone
+   only rounds visible toolbar backgrounds; it does not restore the transparent
+   Wayland window corners. The override must target the HTML `body` and
+   `dialog::backdrop`, matching Firefox's own GTK CSD rule.
+5. Current Firefox uses the root `[tiled]` attribute. The older
+   `[gtktiledwindow="true"]` selector does not match Firefox 155 and must not be
+   used for this fix. Maximized windows still use `sizemode="maximized"`.
+6. The override must use the XHTML namespace. Current `browser.xhtml` has an
+   HTML root and body; a stylesheet whose default namespace is XUL will not
+   match them.
+7. The rule is limited by `-moz-gtk-csd-transparency-available` and excludes
+   actual fullscreen. This prevents black clipped corners on configurations
+   where GTK CSD transparency is unavailable and avoids cutting into video or
+   presentation fullscreen.
+
+The implemented selector lives in
+`other/firefox/MacTahoe/rounded-window-maximized.css` and is imported by
+`other/firefox/userChrome.css`. It intentionally mirrors the structure of the
+Firefox 155 rule shipped in
+`chrome/browser/skin/classic/browser/browser.css`:
+
+```css
+@namespace url("http://www.w3.org/1999/xhtml");
+
+@media (-moz-gtk-csd-transparency-available) {
+  :root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) body,
+  :root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) dialog::backdrop {
+    border-radius: 12px !important;
+    overflow: clip !important;
+  }
+}
+```
+
+To deploy or refresh this fix:
+
+```bash
+./scripts/refresh-mactahoe-profiles.sh --mode dark
+```
+
+Then fully quit Firefox and confirm that no Firefox process remains before
+relaunching it. Merely closing one window is insufficient when Firefox remains
+resident. On Fedora, the packaged rule that this override tracks can be
+inspected with:
+
+```bash
+unzip -p /usr/lib64/firefox/browser/omni.ja \
+  chrome/browser/skin/classic/browser/browser.css | \
+  grep -A40 -B5 -- '-moz-gtk-csd-transparency-available'
+```
+
+After a major Firefox update, recheck that packaged rule and the attributes in
+`chrome/browser/content/browser/browser.xhtml`. Mozilla can rename the tiled
+state attribute or change which element owns the native clip. The authoritative
+implementation is Mozilla's GTK look-and-feel code and packaged browser CSS;
+toolbar-only userChrome recipes are not sufficient for this problem. Relevant
+upstream references are [Firefox GTK look-and-feel source](https://searchfox.org/mozilla-central/source/widget/gtk/nsLookAndFeel.cpp)
+and [Mozilla bug 1982979](https://bugzilla.mozilla.org/show_bug.cgi?id=1982979).
 
 ### GNOME Shell contrast and dock layout
 
@@ -71,8 +156,10 @@ Commit `74d87ed2` made the shell controls more legible and more consistent:
 - The deploy script sets Dash to Dock's `show-apps-at-top` to `true` when the
   extension schema is available.
 
-The release archives changed in the same commit because they were regenerated
-from the adjusted source.
+The bundled release archives are generated from the adjusted source. After
+changing the Sass variables or selectors, rerun
+`vendor/MacTahoe-gtk-theme/make-release.sh` before deploying; the deploy script
+extracts those archives and does not compile Sass itself.
 
 ### Window corner radii
 

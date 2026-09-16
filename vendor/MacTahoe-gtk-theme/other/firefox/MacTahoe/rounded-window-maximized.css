@@ -1,6 +1,13 @@
-@namespace xul url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+@namespace url("http://www.w3.org/1999/xhtml");
 
-:root[tabsintitlebar]:not([inFullscreen])[sizemode="maximized"] #nav-bar {
-	border-radius: 16px 16px 0 0 !important;
+:root {
+	--mactahoe-window-radius: 12px;
 }
 
+@media (-moz-gtk-csd-transparency-available) {
+	:root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) body,
+	:root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) dialog::backdrop {
+		border-radius: var(--mactahoe-window-radius) !important;
+		overflow: clip !important;
+	}
+}
