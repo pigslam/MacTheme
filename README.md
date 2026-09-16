@@ -3,6 +3,9 @@
 This workspace vendors the MacTahoe GTK, icon, and cursor themes and adds a
 single deploy script for GNOME systems.
 
+For the complete audit of post-install changes and the exact current-state
+ledger, see [POST-INSTALL-CUSTOMIZATIONS.md](POST-INSTALL-CUSTOMIZATIONS.md).
+
 ## Install For The Current User
 
 On a fresh machine, print the prerequisite commands first:
