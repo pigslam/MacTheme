@@ -132,6 +132,30 @@ unzip -p /usr/lib64/firefox/browser/omni.ja \
   grep -A40 -B5 -- '-moz-gtk-csd-transparency-available'
 ```
 
+This procedure was visually verified on September 15, 2026 with Fedora 44,
+GNOME Shell 50.4 on Wayland, and Firefox 155.0. After refreshing both detected
+profiles and launching Firefox from a fully stopped state, the browser retained
+the 12 px transparent window corners when GNOME expanded it to fill a tiled
+area. Normal and maximized states use the same radius; actual fullscreen remains
+square by design.
+
+The successful result specifically depended on all of the following being true:
+
+- the rebuilt GTK release archives, rather than only the edited Sass source,
+  were installed;
+- Firefox read `widget.gtk.rounded-bottom-corners.enabled=true` from the active
+  profile;
+- `userChrome.css` imported `rounded-window-maximized.css`;
+- the override selected Firefox's XHTML `body` with the current `[tiled]`
+  attribute; and
+- Firefox was fully restarted after the profile files were copied.
+
+Earlier attempts that rounded `#nav-bar`, `#TabsToolbar`,
+`#navigator-toolbox`, or `:root`, or that selected
+`[gtktiledwindow="true"]`, changed internal toolbar backgrounds at most and did
+not restore the native transparent corners. Keep this distinction when adapting
+the rule for future Firefox releases.
+
 After a major Firefox update, recheck that packaged rule and the attributes in
 `chrome/browser/content/browser/browser.xhtml`. Mozilla can rename the tiled
 state attribute or change which element owns the native clip. The authoritative
