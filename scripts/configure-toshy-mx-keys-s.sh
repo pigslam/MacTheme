@@ -48,7 +48,8 @@ PY
 clear_global_kbtype_override
 
 if grep -qF "${MARKER}" "${CONFIG_FILE}"; then
-  if ! grep -q 'Key.LEFT_ALT:               Key.LEFT_META.*Middle Start/Opt' "${CONFIG_FILE}"; then
+  if ! grep -q 'Key.LEFT_ALT:               Key.LEFT_META.*Middle Start/Opt' "${CONFIG_FILE}" \
+    || ! grep -q 'C("Mail"):           C("Print")' "${CONFIG_FILE}"; then
     mkdir -p "${BACKUP_DIR}"
     backup_path="${BACKUP_DIR}/toshy_config.py.$(date +%Y%m%d-%H%M%S)"
     cp -a "${CONFIG_FILE}" "${backup_path}"
@@ -112,6 +113,19 @@ pattern = (
 text, count = re.subn(pattern, r'\1    not mactheme_is_mx_keys_s(ctx) and\n\2', text, count=1, flags=re.S)
 if count != 1 and 'not mactheme_is_mx_keys_s(ctx)' not in text:
     raise SystemExit("expected Toshy Windows terminal Opt-held modmap was not found; no changes made")
+
+screenshot_pattern = r'keymap\("Logitech screenshot key", \{.*?\n\}\)'
+screenshot_replacement = '''keymap("Logitech screenshot key", {
+    C("Shift-LAlt-S"):   C("Print"),
+    C("Shift-Super-S"):  C("Print"),
+    C("Mail"):           C("Print"),
+    C("Email"):          C("Print"),
+}, when = lambda ctx:
+    mactheme_is_mx_keys_s(ctx)
+)'''
+text, count = re.subn(screenshot_pattern, screenshot_replacement, text, count=1, flags=re.S)
+if count != 1:
+    raise SystemExit("expected Toshy Logitech screenshot keymap was not found; no changes made")
 path.write_text(text)
 PY
     printf 'Updated MacTheme MX Keys S policy in %s\nBackup: %s\n' "${CONFIG_FILE}" "${backup_path}"
@@ -258,6 +272,22 @@ text, count = re.subn(
 )
 if count != 1:
     raise SystemExit("expected Toshy Windows terminal Opt-held modmap was not found; no changes made")
+
+screenshot_old = '''keymap("Logitech screenshot key", {
+    C("Shift-LAlt-S"):   C("Print"),
+    C("Shift-Super-S"):  C("Print"),
+})'''
+screenshot_new = '''keymap("Logitech screenshot key", {
+    C("Shift-LAlt-S"):   C("Print"),
+    C("Shift-Super-S"):  C("Print"),
+    C("Mail"):           C("Print"),
+    C("Email"):          C("Print"),
+}, when = lambda ctx:
+    mactheme_is_mx_keys_s(ctx)
+)'''
+if screenshot_old not in text:
+    raise SystemExit("expected Toshy Logitech screenshot keymap was not found; no changes made")
+text = text.replace(screenshot_old, screenshot_new, 1)
 
 user_apps_start = re.search(r"###\s+SLICE_MARK_START:\s+user_apps", text)
 insert_before = "keymap(\"User terminal Cmd+A\", {"
