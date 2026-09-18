@@ -67,8 +67,27 @@ to identify the focused application:
 - [Focused Window D-Bus](https://extensions.gnome.org/extension/5592/focused-window-d-bus/)
 
 Follow Toshy's current installation and compatibility guidance when choosing
-an extension. This theme bundle does not install or configure Toshy; the two
-projects can be installed and updated independently.
+an extension. The optional `scripts/configure-toshy-mx-keys-s.sh` applies the
+small, reproducible MX Keys S modifier policy used by this workstation. It
+edits only Toshy's supported editable config slices plus the two Windows GUI
+modifier entries that Toshy does not expose as preferences, and makes a
+timestamped backup before changing anything. It preserves the existing
+screenshot key mapping. The two device names currently used by this model are
+matched: `Logitech USB Receiver` for Bolt and `MX Keys S` for Bluetooth.
+
+Run it after installing Toshy and connect the keyboard through the Bolt
+receiver first:
+
+```bash
+./scripts/configure-toshy-mx-keys-s.sh
+toshy-services-restart
+```
+
+The policy keeps physical Ctrl as Ctrl, leaves the middle Start/Opt key as
+Linux Super, retains Toshy's normal Command behavior for the physical
+Alt/Cmd key, and maps that key with F4 to Alt+F4. The Bolt receiver and the
+Bluetooth representation share this one policy; no duplicated shortcut map
+is maintained.
 
 Firefox and Thunderbird draw their own titlebar controls, so the deploy script
 installs a small `userChrome` override into detected profiles. Launch those apps
