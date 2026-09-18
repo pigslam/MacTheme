@@ -48,7 +48,7 @@ PY
 clear_global_kbtype_override
 
 if grep -qF "${MARKER}" "${CONFIG_FILE}"; then
-  if ! grep -A 10 'Cond modmap.*Terms - Win kbd - Opt held' "${CONFIG_FILE}" | grep -q 'not mactheme_is_mx_keys_s(ctx)'; then
+  if ! grep -q 'Key.LEFT_ALT:               Key.LEFT_META.*Middle Start/Opt' "${CONFIG_FILE}"; then
     mkdir -p "${BACKUP_DIR}"
     backup_path="${BACKUP_DIR}/toshy_config.py.$(date +%Y%m%d-%H%M%S)"
     cp -a "${CONFIG_FILE}" "${backup_path}"
@@ -59,12 +59,58 @@ from pathlib import Path
 
 path = Path(os.environ["CONFIG_FILE"])
 text = path.read_text()
+
+gui_pattern = r'(?m)^modmap\("Cond modmap - GUI - Win kbd", \{.*?\n\)'
+gui_replacement = '''modmap("Cond modmap - GUI - Win kbd", {
+    # MacTheme MX Keys S modifier policy: use the physical modifier positions.
+    Key.LEFT_CTRL:              Key.LEFT_CTRL,
+    Key.LEFT_ALT:               Key.LEFT_META,
+    Key.LEFT_META:              Key.RIGHT_CTRL,
+}, when = lambda ctx:
+    cnfg.screen_has_focus and
+    ctx_kbd_is_windows and
+    mactheme_is_mx_keys_s(ctx) and
+    not ctx_app_is_terminal and not ctx_app_is_remote
+)'''
+text, count = re.subn(gui_pattern, gui_replacement, text, count=1, flags=re.S)
+if count != 1:
+    raise SystemExit("expected MacTheme Windows GUI modmap was not found; no changes made")
+
+terms_pattern = r'(?m)^modmap\("Cond modmap - Terms - Win kbd", \{.*?\n\)'
+terms_replacement = '''modmap("Cond modmap - Terms - Win kbd", {
+    Key.LEFT_CTRL:              Key.LEFT_CTRL,
+    Key.LEFT_ALT:               Key.LEFT_META,
+    Key.LEFT_META:              Key.RIGHT_CTRL,
+}, when = lambda ctx:
+    cnfg.screen_has_focus and
+    ctx_kbd_is_windows and
+    ctx_app_is_terminal
+)'''
+text, count = re.subn(terms_pattern, terms_replacement, text, count=1, flags=re.S)
+if count != 1:
+    raise SystemExit("expected MacTheme Windows terminal modmap was not found; no changes made")
+
+for label, terminal_clause in (("GUI", "not ctx_app_is_terminal and not ctx_app_is_remote"), ("Terms", "ctx_app_is_terminal")):
+    pattern = (
+        rf'(modmap\("Cond modmap - {label} - Win kbd - Cmd held".*?'
+        rf'ctx_kbd_is_windows and\n)(    {re.escape(terminal_clause)})'
+    )
+    text, count = re.subn(
+        pattern,
+        r'\1    not mactheme_is_mx_keys_s(ctx) and\n\2',
+        text,
+        count=1,
+        flags=re.S,
+    )
+    if count != 1 and 'not mactheme_is_mx_keys_s(ctx)' not in text:
+        raise SystemExit(f"expected MacTheme Windows {label} Cmd-held modmap was not found; no changes made")
+
 pattern = (
     r'(modmap\("Cond modmap - Terms - Win kbd - Opt held".*?'
     r'ctx_kbd_is_windows and\n)(    ctx_app_is_terminal)'
 )
 text, count = re.subn(pattern, r'\1    not mactheme_is_mx_keys_s(ctx) and\n\2', text, count=1, flags=re.S)
-if count != 1:
+if count != 1 and 'not mactheme_is_mx_keys_s(ctx)' not in text:
     raise SystemExit("expected Toshy Windows terminal Opt-held modmap was not found; no changes made")
 path.write_text(text)
 PY
@@ -122,9 +168,10 @@ win_gui_old = """modmap(\"Cond modmap - GUI - Win kbd\", {
 win_gui_new = """modmap(\"Cond modmap - GUI - Win kbd\", {
     # - Default Mac/Win
     # - Default Win
-    ${marker}: keep the physical Ctrl key as Ctrl for the MX Keys S policy.
+    ${marker}: use the MX Keys S physical modifier positions.
     Key.LEFT_CTRL:              Key.LEFT_CTRL,                  # MacTheme MX Keys S
-    # LEFT_ALT (Cmd) and LEFT_META (Opt) handled by the held companions / Super tap multis
+    Key.LEFT_ALT:               Key.LEFT_META,                   # Middle Start/Opt -> Super
+    Key.LEFT_META:              Key.RIGHT_CTRL,                 # Right Alt/Cmd -> Toshy Cmd
 }, when = lambda ctx:
     cnfg.screen_has_focus and
     ctx_kbd_is_windows and
@@ -157,6 +204,46 @@ opt_new = """modmap(\"Cond modmap - GUI - Win kbd - Opt held\", {
 if opt_old not in text:
     raise SystemExit("expected Toshy Windows Opt-held modmap was not found; no changes made")
 text = text.replace(opt_old, opt_new, 1)
+
+terms_win_old = """modmap(\"Cond modmap - Terms - Win kbd\", {
+    # - Default Mac/Win
+    # - Default Win
+    Key.LEFT_CTRL:              Key.LEFT_CTRL,                  # WinMac
+    # LEFT_ALT (Cmd) and LEFT_META (Opt) handled by the held companions / Super tap multis
+}, when = lambda ctx:
+    cnfg.screen_has_focus and
+    ctx_kbd_is_windows and
+    ctx_app_is_terminal
+)"""
+terms_win_new = """modmap(\"Cond modmap - Terms - Win kbd\", {
+    # - Default Mac/Win
+    # - Default Win
+    Key.LEFT_CTRL:              Key.LEFT_CTRL,                  # WinMac
+    Key.LEFT_ALT:               Key.LEFT_META,                  # Middle Start/Opt -> Super
+    Key.LEFT_META:              Key.RIGHT_CTRL,                 # Right Alt/Cmd -> Toshy Cmd
+}, when = lambda ctx:
+    cnfg.screen_has_focus and
+    ctx_kbd_is_windows and
+    ctx_app_is_terminal
+)"""
+if terms_win_old not in text:
+    raise SystemExit("expected Toshy Windows terminal modmap was not found; no changes made")
+text = text.replace(terms_win_old, terms_win_new, 1)
+
+for label, terminal_clause in (("GUI", "not ctx_app_is_terminal and not ctx_app_is_remote"), ("Terms", "ctx_app_is_terminal")):
+    cmd_pattern = (
+        rf'(modmap\("Cond modmap - {label} - Win kbd - Cmd held".*?'
+        rf'ctx_kbd_is_windows and\n)(    {re.escape(terminal_clause)})'
+    )
+    text, count = re.subn(
+        cmd_pattern,
+        r'\1    not mactheme_is_mx_keys_s(ctx) and\n\2',
+        text,
+        count=1,
+        flags=re.S,
+    )
+    if count != 1:
+        raise SystemExit(f"expected Toshy Windows {label} Cmd-held modmap was not found; no changes made")
 
 terms_pattern = (
     r'(modmap\("Cond modmap - Terms - Win kbd - Opt held".*?'
