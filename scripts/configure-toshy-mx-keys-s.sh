@@ -3,6 +3,7 @@ set -euo pipefail
 
 CONFIG_FILE="${XDG_CONFIG_HOME:-${HOME}/.config}/toshy/toshy_config.py"
 BACKUP_DIR="${CONFIG_FILE}.mactheme-backups"
+PREF_DB="$(dirname "${CONFIG_FILE}")/toshy_user_preferences.sqlite"
 MARKER="# MacTheme MX Keys S modifier policy"
 
 die() {
@@ -11,6 +12,40 @@ die() {
 }
 
 [[ -f "${CONFIG_FILE}" ]] || die "Toshy config not found: ${CONFIG_FILE}"
+
+clear_global_kbtype_override() {
+  [[ -f "${PREF_DB}" ]] || return 0
+
+  if ! PREF_DB="${PREF_DB}" python3 - <<'PY'
+import os
+import sqlite3
+
+with sqlite3.connect(os.environ["PREF_DB"]) as db:
+    row = db.execute(
+        "select value from config_preferences where name = 'override_kbtype'"
+    ).fetchone()
+raise SystemExit(0 if not row or not row[0] else 1)
+PY
+  then
+    mkdir -p "${BACKUP_DIR}"
+    pref_backup="${BACKUP_DIR}/toshy_user_preferences.sqlite.$(date +%Y%m%d-%H%M%S)"
+    cp -a "${PREF_DB}" "${pref_backup}"
+    PREF_DB="${PREF_DB}" python3 - <<'PY'
+import os
+import sqlite3
+
+with sqlite3.connect(os.environ["PREF_DB"]) as db:
+    db.execute(
+        "update config_preferences set value = '' where name = 'override_kbtype'"
+    )
+    db.commit()
+PY
+    printf 'Cleared Toshy global keyboard-type override; MX Keys S will use automatic classification.\n'
+    printf 'Preference backup: %s\n' "${pref_backup}"
+  fi
+}
+
+clear_global_kbtype_override
 
 if grep -qF "${MARKER}" "${CONFIG_FILE}"; then
   if ! grep -A 10 'Cond modmap.*Terms - Win kbd - Opt held' "${CONFIG_FILE}" | grep -q 'not mactheme_is_mx_keys_s(ctx)'; then

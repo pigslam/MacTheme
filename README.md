@@ -72,8 +72,10 @@ small, reproducible MX Keys S modifier policy used by this workstation. It
 edits only Toshy's supported editable config slices plus the two Windows GUI
 modifier entries that Toshy does not expose as preferences, and makes a
 timestamped backup before changing anything. It preserves the existing
-screenshot key mapping. The two device names currently used by this model are
-matched: `Logitech USB Receiver` for Bolt and `MX Keys S` for Bluetooth.
+screenshot key mapping and clears any stale global Toshy keyboard-type
+override so the MX Keys S can be classified automatically. The two device
+names currently used by this model are matched: `Logitech USB Receiver` for
+Bolt and `MX Keys S` for Bluetooth.
 
 Run it after installing Toshy and connect the keyboard through the Bolt
 receiver first:
