@@ -185,6 +185,32 @@ changing the Sass variables or selectors, rerun
 `vendor/MacTahoe-gtk-theme/make-release.sh` before deploying; the deploy script
 extracts those archives and does not compile Sass itself.
 
+### Date, clock, and notification menu position
+
+The source machine uses [Move Clock](https://extensions.gnome.org/extension/6949/moveclock/)
+(`moveclock@kuvaus.org`, version 11), verified active on GNOME Shell 50.4.
+With `clock-before-statusmenu=false`, it moves the entire date menu to the
+far right of the top bar, after Quick Settings. The date, clock, notification
+indicator, and calendar/notification panel opened by clicking it move together.
+The user confirmed this is the desired behavior. New notification pop-up
+banners remain at the top center.
+
+To reproduce, install Move Clock from the linked GNOME Extensions page. If
+GNOME does not recognize the new extension immediately, log out and back in.
+Then run:
+
+```bash
+gsettings --schemadir "$HOME/.local/share/gnome-shell/extensions/moveclock@kuvaus.org/schemas" \
+  set org.gnome.shell.extensions.moveclock clock-before-statusmenu false
+gnome-extensions enable moveclock@kuvaus.org
+```
+
+If changing the setting while the extension is already active, disable and
+re-enable it. To restore the centered date menu, run
+`gnome-extensions disable moveclock@kuvaus.org`.
+This is a per-user extension configuration; the deployment scripts do not
+install or configure it.
+
 ### Window corner radii
 
 Commit `ea6d8a6b` tightened and preserved the rounded-window treatment:
