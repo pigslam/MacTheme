@@ -12,10 +12,11 @@ mkdir -p "${PACKAGE_DIR}"
 tar \
   --exclude='.git' \
   --exclude='dist' \
+  --exclude='__pycache__' \
   --exclude='vendor/*/.git' \
   --exclude='vendor/*/*/.git' \
   -czf "${ARCHIVE}" \
   -C "${ROOT_DIR}" \
-  scripts vendor README.md
+  scripts vendor README.md POST-INSTALL-CUSTOMIZATIONS.md
 
 printf '%s\n' "${ARCHIVE}"

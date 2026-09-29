@@ -6,7 +6,12 @@ GTK_REPO="${ROOT_DIR}/vendor/MacTahoe-gtk-theme"
 GTK_THEME_DARK="MacTahoe-Dark"
 GTK_THEME_LIGHT="MacTahoe-Light"
 MODE="dark"
+INSTALL_TOSHY="no"
+SHOW_SUMMARY="yes"
 REFRESH_GTK="yes"
+REFRESH_THEME_FILES="yes"
+INSTALL_LIBADWAITA="yes"
+REFRESH_DESKTOP="yes"
 REFRESH_FIREFOX="yes"
 REFRESH_THUNDERBIRD="yes"
 REFRESH_FLATPAK="yes"
@@ -16,11 +21,17 @@ usage() {
 Usage: scripts/refresh-mactahoe-profiles.sh [options]
 
 Refreshes per-user settings that app updates or new profiles may miss:
-GTK decoration/theme settings, Firefox/Thunderbird userChrome traffic lights,
-and known Flatpak theme access.
+GTK 3/4 theme files and settings, Firefox/Thunderbird chrome, installed desktop
+extension adjustments, and known Flatpak theme access.
 
 Options:
   --mode dark|light          GTK theme mode to write. Default: dark
+  --theme-files              Refresh GTK 3/4 assets from bundled releases. Default
+  --no-theme-files           Skip theme assets (profile/settings-only refresh)
+  --libadwaita               Refresh the shared GTK 4 override. Default
+  --no-libadwaita            Leave the shared GTK 4 override untouched
+  --desktop                  Configure installed dock/tray/clock extensions. Default
+  --no-desktop               Do not change GNOME extension settings
   --gtk                      Refresh GTK 3/4 settings. Default
   --no-gtk                   Do not write GTK settings
   --firefox                  Refresh detected Firefox profiles. Default
@@ -29,6 +40,8 @@ Options:
   --no-thunderbird           Do not modify Thunderbird profiles
   --flatpak                  Refresh known installed Flatpak theme access. Default
   --no-flatpak               Do not modify Flatpak overrides
+  --install-toshy           Run the optional upstream interactive Toshy installer afterward
+  --no-summary              Hide the final extensions/keyboard setup guide
   --help                     Show this help
 EOF
 }
@@ -117,54 +130,23 @@ refresh_gtk_settings() {
 }
 
 firefox_profile_dirs() {
-  local base
-  for base in \
-    "${HOME}/.config/mozilla/firefox" \
-    "${HOME}/.mozilla/firefox" \
+  python3 "${ROOT_DIR}/scripts/lib/mactahoe-files.py" profiles \
+    "${HOME}/.config/mozilla/firefox" "${HOME}/.mozilla/firefox" \
     "${HOME}/.var/app/org.mozilla.firefox/.mozilla/firefox" \
-    "${HOME}/snap/firefox/common/.mozilla/firefox"; do
-    [[ -d "${base}" ]] || continue
-    find "${base}" -mindepth 1 -maxdepth 1 -type d \
-      \( -name '*.default*' -o -name '*default-release*' -o -name '*.dev-edition-default' \) \
-      -print
-  done
+    "${HOME}/snap/firefox/common/.mozilla/firefox"
 }
 
 thunderbird_profile_dirs() {
-  local base
-  for base in \
-    "${HOME}/.thunderbird" \
-    "${HOME}/.config/thunderbird" \
+  python3 "${ROOT_DIR}/scripts/lib/mactahoe-files.py" profiles \
+    "${HOME}/.thunderbird" "${HOME}/.config/thunderbird" \
     "${HOME}/.var/app/org.mozilla.Thunderbird/.thunderbird" \
-    "${HOME}/snap/thunderbird/common/.thunderbird"; do
-    [[ -d "${base}" ]] || continue
-    find "${base}" -mindepth 1 -maxdepth 1 -type d \
-      \( -name '*.default*' -o -name '*default-release*' -o -name '*.default-esr' \) \
-      -print
-  done
+    "${HOME}/snap/thunderbird/common/.thunderbird"
 }
 
 install_firefox_profile_theme() {
   local profile_dir="$1"
-  local chrome_dir="${profile_dir}/chrome"
-  local firefox_source="${GTK_REPO}/other/firefox"
   local user_js="${profile_dir}/user.js"
-
-  need_file "${firefox_source}/userChrome.css"
-  need_file "${firefox_source}/userContent.css"
-  need_file "${firefox_source}/customChrome.css"
-
-  mkdir -p "${chrome_dir}"
-  if [[ ! -e "${chrome_dir}/.mactahoe-backup" ]]; then
-    mkdir -p "${chrome_dir}/.mactahoe-backup"
-    find "${chrome_dir}" -mindepth 1 -maxdepth 1 ! -name '.mactahoe-backup' -exec cp -a {} "${chrome_dir}/.mactahoe-backup/" \;
-  fi
-
-  rm -rf "${chrome_dir}/MacTahoe"
-  cp -a "${firefox_source}/MacTahoe" "${chrome_dir}/"
-  cp -a "${firefox_source}/customChrome.css" "${chrome_dir}/"
-  cp -a "${firefox_source}/userChrome.css" "${chrome_dir}/userChrome.css"
-  cp -a "${firefox_source}/userContent.css" "${chrome_dir}/userContent.css"
+  python3 "${ROOT_DIR}/scripts/lib/mactahoe-files.py" chrome --app firefox "${profile_dir}"
 
   touch "${user_js}"
   ensure_user_pref "${user_js}" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
@@ -178,22 +160,8 @@ install_firefox_profile_theme() {
 
 install_thunderbird_profile_theme() {
   local profile_dir="$1"
-  local chrome_dir="${profile_dir}/chrome"
-  local firefox_source="${GTK_REPO}/other/firefox"
   local user_js="${profile_dir}/user.js"
-
-  need_file "${firefox_source}/MacTahoe/firefox-titlebutton-compat.css"
-  need_file "${firefox_source}/userChrome.css"
-
-  mkdir -p "${chrome_dir}"
-  if [[ ! -e "${chrome_dir}/.mactahoe-backup" ]]; then
-    mkdir -p "${chrome_dir}/.mactahoe-backup"
-    find "${chrome_dir}" -mindepth 1 -maxdepth 1 ! -name '.mactahoe-backup' -exec cp -a {} "${chrome_dir}/.mactahoe-backup/" \;
-  fi
-
-  rm -rf "${chrome_dir}/MacTahoe"
-  cp -a "${firefox_source}/MacTahoe" "${chrome_dir}/"
-  cp -a "${firefox_source}/userChrome.css" "${chrome_dir}/userChrome.css"
+  python3 "${ROOT_DIR}/scripts/lib/mactahoe-files.py" chrome --app thunderbird "${profile_dir}"
 
   touch "${user_js}"
   ensure_user_pref "${user_js}" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
@@ -203,7 +171,10 @@ install_thunderbird_profile_theme() {
 
 refresh_firefox() {
   log "Refreshing Firefox profiles"
-  mapfile -t firefox_profiles < <(firefox_profile_dirs)
+  local detected
+  detected="$(firefox_profile_dirs)"
+  local firefox_profiles=()
+  [[ -z "${detected}" ]] || mapfile -t firefox_profiles <<< "${detected}"
   if [[ "${#firefox_profiles[@]}" -eq 0 ]]; then
     warn "No Firefox profiles were found. Launch Firefox once, then rerun this script."
     return
@@ -214,12 +185,15 @@ refresh_firefox() {
     log "Applying Firefox buttons to ${profile}"
     install_firefox_profile_theme "${profile}"
   done
-  warn "Restart Firefox to load the updated userChrome.css."
+  warn "Fully quit all Firefox processes and reopen it to load the updated chrome and corner clipping."
 }
 
 refresh_thunderbird() {
   log "Refreshing Thunderbird profiles"
-  mapfile -t thunderbird_profiles < <(thunderbird_profile_dirs)
+  local detected
+  detected="$(thunderbird_profile_dirs)"
+  local thunderbird_profiles=()
+  [[ -z "${detected}" ]] || mapfile -t thunderbird_profiles <<< "${detected}"
   if [[ "${#thunderbird_profiles[@]}" -eq 0 ]]; then
     warn "No Thunderbird profiles were found. Launch Thunderbird once, then rerun this script."
     return
@@ -281,6 +255,12 @@ while [[ $# -gt 0 ]]; do
       [[ "${MODE}" == "dark" || "${MODE}" == "light" ]] || die "--mode must be dark or light"
       shift 2
       ;;
+    --theme-files) REFRESH_THEME_FILES="yes"; shift ;;
+    --no-theme-files) REFRESH_THEME_FILES="no"; shift ;;
+    --libadwaita) INSTALL_LIBADWAITA="yes"; shift ;;
+    --no-libadwaita) INSTALL_LIBADWAITA="no"; shift ;;
+    --desktop) REFRESH_DESKTOP="yes"; shift ;;
+    --no-desktop) REFRESH_DESKTOP="no"; shift ;;
     --gtk)
       REFRESH_GTK="yes"
       shift
@@ -313,6 +293,8 @@ while [[ $# -gt 0 ]]; do
       REFRESH_FLATPAK="no"
       shift
       ;;
+    --install-toshy) INSTALL_TOSHY="yes"; shift ;;
+    --no-summary) SHOW_SUMMARY="no"; shift ;;
     --help|-h)
       usage
       exit 0
@@ -323,9 +305,22 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+command_exists python3 || die "python3 is required for verified theme/profile refresh."
+source "${ROOT_DIR}/scripts/lib/mactahoe-desktop.sh"
+if [[ "${REFRESH_THEME_FILES}" == "yes" ]]; then
+  theme_args=(themes --mode "${MODE}")
+  [[ "${INSTALL_LIBADWAITA}" == "no" ]] && theme_args+=(--no-libadwaita)
+  python3 "${ROOT_DIR}/scripts/lib/mactahoe-files.py" "${theme_args[@]}"
+  warn "Restart GTK applications, including Ghostty, to load the updated theme."
+fi
+if [[ "${REFRESH_DESKTOP}" == "yes" ]]; then
+  apply_desktop_adjustments
+fi
+
 [[ "${REFRESH_GTK}" == "yes" ]] && refresh_gtk_settings
 [[ "${REFRESH_FIREFOX}" == "yes" ]] && refresh_firefox
 [[ "${REFRESH_THUNDERBIRD}" == "yes" ]] && refresh_thunderbird
 [[ "${REFRESH_FLATPAK}" == "yes" ]] && refresh_known_flatpaks
 
 log "MacTahoe profile refresh complete"
+finish_mactahoe_setup

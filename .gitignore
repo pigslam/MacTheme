@@ -1,3 +1,5 @@
 dist/*.tar.gz
 vendor/.upstream-git/
 .git.invalid-*/
+
+__pycache__/

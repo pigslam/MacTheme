@@ -26,8 +26,9 @@ For profiles created later or after browser updates, run:
 ```
 
 Restart affected applications after either operation. The scripts make
-backups of existing Firefox/Thunderbird `chrome` files and the GTK 4 override
-before replacing them.
+per-run backups of changed managed theme/chrome files and browser `user.js`
+under `~/.local/state/mactheme/refresh-*`. Personal browser CSS and unrelated
+GTK 4 settings are preserved.
 
 ## Changes made after the initial import
 
@@ -45,11 +46,11 @@ Firefox/Thunderbird chrome override:
   them in a 32 px button box, gives buttons 3 px inline spacing, and reserves
   a 10 px pre-tab spacer.
 - `rounded-window-maximized.css` keeps Firefox clipped to the theme's 12 px
-  window radius when GNOME marks it maximized or tiled, while leaving true
+  window radius in floating, maximized, and tiled states, while leaving true
   fullscreen mode unclipped.
 - The profile installer copies `customChrome.css` as well as the MacTahoe
   theme directory and enables the required custom stylesheet preferences.
-- Firefox profiles additionally receive compact density, titlebar drawing,
+- Firefox profiles additionally receive normal density, titlebar drawing,
   accelerated rendering, ARGB visuals, rounded bottom corners, and SVG
   context properties.
 - Thunderbird profiles additionally receive `mail.tabs.drawInTitlebar` and
@@ -58,7 +59,7 @@ Firefox/Thunderbird chrome override:
 The refresh script covers both applications so this work survives new
 profiles and app updates.
 
-#### Firefox maximized and tiled window corners
+#### Firefox floating, maximized, and tiled window corners
 
 Firefox needs an additional application-level fix beyond the GTK theme. On
 Linux, Firefox draws browser chrome into its own child surface. Its packaged
@@ -107,13 +108,23 @@ Firefox 155 rule shipped in
 @namespace url("http://www.w3.org/1999/xhtml");
 
 @media (-moz-gtk-csd-transparency-available) {
-  :root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) body,
-  :root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) dialog::backdrop {
+  :root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]) body,
+  :root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]) dialog::backdrop {
     border-radius: 12px !important;
     overflow: clip !important;
   }
 }
 ```
+
+The override also covers normal floating windows so restoring a window does
+not switch back to a different GTK environment radius. The native GTK
+outline and Firefox content clip must agree. A later floating-window report
+revealed installed GTK 3 files with a 24 px radius and an older Firefox
+profile override, although the repository release archive already used 12 px.
+The old profile-only refresh did not update installed GTK theme files. The
+refresh script now updates those assets by default, alongside profile chrome.
+The user confirmed that refreshing the installed GTK 3 stylesheets and Firefox
+profile overrides corrected the floating-window radius and dotted arc.
 
 To deploy or refresh this fix:
 
@@ -185,6 +196,27 @@ changing the Sass variables or selectors, rerun
 `vendor/MacTahoe-gtk-theme/make-release.sh` before deploying; the deploy script
 extracts those archives and does not compile Sass itself.
 
+### System tray bubble alignment
+
+With the MacTahoe-Dark shell theme, AppIndicator compact mode left tray icons
+horizontally off-center inside their hover/active bubbles. Compact mode requests
+10 px natural horizontal padding, while the theme specifies a 16 px minimum
+for these buttons. Disabling compact mode restores matching theme padding.
+The user confirmed that this corrected the alignment on the source machine.
+
+For the per-user AppIndicator extension installation, apply the fix with:
+
+```bash
+gsettings --schemadir "$HOME/.local/share/gnome-shell/extensions/appindicatorsupport@rgcjonas.gmail.com/schemas" \
+  set org.gnome.shell.extensions.appindicator compact-mode-enabled false
+```
+
+The change takes effect immediately and may make tray spacing slightly wider.
+To undo it, run the same command with `true` instead of `false`. If the
+extension's schema is installed system-wide, omit `--schemadir` and its path.
+Deploy and refresh now apply this setting when the extension schema is
+available, including per-user schema installations.
+
 ### Date, clock, and notification menu position
 
 The source machine uses [Move Clock](https://extensions.gnome.org/extension/6949/moveclock/)
@@ -208,8 +240,44 @@ gnome-extensions enable moveclock@kuvaus.org
 If changing the setting while the extension is already active, disable and
 re-enable it. To restore the centered date menu, run
 `gnome-extensions disable moveclock@kuvaus.org`.
-This is a per-user extension configuration; the deployment scripts do not
-install or configure it.
+Deploy and refresh now configure this setting and enable/reload Move Clock
+when GNOME recognizes it. They do not install the extension.
+
+### Ghostty GTK 4 corner refresh
+
+Ghostty 1.3.1 on this machine uses GTK 4 with libadwaita. Its installed
+`~/.config/gtk-4.0/gtk.css` and `gtk-dark.css` still had 24 px floating corners
+and 0 px maximized/tiled corners. The repository release archive already had
+12 px rules for these states. Both GTK 4 override stylesheets and the GTK 4
+stylesheets in the installed MacTahoe-Dark/Light themes were refreshed from
+those archives, with backups under
+`~/.local/state/mactheme/gtk4-corner-backup-20260928-211717`.
+
+The installed files were verified against the archive, including asset paths.
+The user confirmed that a full Ghostty restart corrected both floating and
+maximized corners. The GTK 4 override is shared by other GTK 4 applications, so those
+applications also receive the corrected radii after restarting. The existing
+`deploy-mactahoe.sh` default libadwaita installation reproduces this update;
+`refresh-mactahoe-profiles.sh` now also copies GTK theme stylesheets by default.
+
+### Installer consolidation after corner fixes
+
+The deploy and refresh paths now share `scripts/lib/mactahoe-files.py` for
+validated GTK installation and per-run backups. Refresh updates primary and
+already-installed bundled GTK variants, plus the GTK 4 override, by default.
+`--no-theme-files` retains a profile/settings-only pass; `--no-libadwaita`
+preserves a personal GTK 4 override. The helper checks normal and maximized
+12 px rules before any theme files are installed and verifies written bytes.
+
+Mozilla profiles are discovered through `profiles.ini` as well as legacy
+folder naming. Managed imports and placement CSS are refreshed without replacing
+personal CSS. Thunderbird receives its missing placement file but does not
+import Firefox's browser-document clipping rule. The unused duplicate browser
+installer functions were removed from the deploy script.
+
+Shared extension configuration covers the dock launcher, tray alignment, clock
+position, and per-user schema lookup. Python integration tests exercise the
+installer in disposable homes with desktop commands stubbed.
 
 ### Window corner radii
 
@@ -223,7 +291,10 @@ Commit `ea6d8a6b` tightened and preserved the rounded-window treatment:
 ### Keyboard behavior
 
 Commits `879157f2` and `468aa1fe` documented Toshy as an optional companion.
-Toshy is not installed or configured by this repository. On Wayland it also
+Toshy is not installed by default. Deploy/refresh offer `--install-toshy` to
+launch the upstream interactive installer after theme setup. The
+separate optional `scripts/configure-toshy-mx-keys-s.sh` reproduces the confirmed
+MX Keys S modifier mapping and preserves the screenshot shortcut. On Wayland it also
 needs a supported focused-window GNOME extension; current links and guidance
 are maintained in `README.md`.
 
@@ -244,7 +315,8 @@ The audit found the following theme-related state:
   above and the installed MacTahoe chrome files.
 - The machine currently has all bundled GTK variants installed, including
   dark/light, solid, Nord, hdpi, and xhdpi variants. `--gtk-all` reproduces
-  that breadth.
+  the eight bundled light/dark, solid, and Nord releases. The hdpi/xhdpi
+  directories are not separate bundled release archives.
 - A small piece of live-state drift remains: the solid top-bar marker is
   present in the installed solid/Nord variants but not in the primary
   `MacTahoe-Dark` and `MacTahoe-Light` directories. Rerunning the deploy
@@ -259,5 +331,11 @@ wallpaper slideshow data, blur pipeline settings, the complete extension
 roster, application favorites, and any personal Toshy configuration. Those
 should be exported separately if an exact workstation clone is desired.
 
-The deployment scripts do not require `sudo`; package installation and the
-optional GNOME extensions remain explicit system-level prerequisites.
+Default theme deployment does not require `sudo`; package installation and
+optional GNOME extensions remain explicit prerequisites. The optional Toshy
+installer can request administrator access for its dependencies and input rules.
+
+Deploy and refresh finish with extension status/install links, Toshy installation
+options, its GNOME Wayland focus-extension choices, the MX Keys S configuration
+command, and restart reminders. `--no-summary` hides this guide. Nested refreshes
+during deploy suppress it so the guide appears only once.

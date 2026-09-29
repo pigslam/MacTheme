@@ -13,6 +13,8 @@ GTK_THEME_LIGHT="MacTahoe-Light"
 ICON_THEME="MacTahoe-dark"
 CURSOR_THEME="MacTahoe-cursors"
 MODE="dark"
+INSTALL_TOSHY="no"
+SHOW_SUMMARY="yes"
 APPLY_SETTINGS="yes"
 INSTALL_LIBADWAITA="yes"
 INSTALL_ALL_GTK_RELEASES="no"
@@ -47,6 +49,8 @@ Options:
   --no-apply                 Install files but do not change GNOME settings
   --gtk-minimal              Install only Light and Dark GTK releases. Default
   --gtk-all                  Install all bundled GTK release variants
+  --install-toshy           Run the optional upstream interactive Toshy installer afterward
+  --no-summary              Hide the final extensions/keyboard setup guide
   --help                     Show this help
 EOF
 }
@@ -72,197 +76,7 @@ command_exists() {
   command -v "$1" >/dev/null 2>&1
 }
 
-ensure_gtk_setting() {
-  local settings_file="$1"
-  local key="$2"
-  local value="$3"
-
-  mkdir -p "$(dirname "${settings_file}")"
-
-  if [[ ! -f "${settings_file}" ]]; then
-    printf '[Settings]\n%s=%s\n' "${key}" "${value}" > "${settings_file}"
-    return
-  fi
-
-  if ! grep -q '^\[Settings\]' "${settings_file}"; then
-    printf '\n[Settings]\n%s=%s\n' "${key}" "${value}" >> "${settings_file}"
-    return
-  fi
-
-  if grep -q "^[[:space:]]*${key}=" "${settings_file}"; then
-    sed -i "s|^[[:space:]]*${key}=.*|${key}=${value}|" "${settings_file}"
-  else
-    sed -i "/^\\[Settings\\]/a ${key}=${value}" "${settings_file}"
-  fi
-}
-
-apply_gtk_decoration_layout() {
-  local layout='close,minimize,maximize:'
-  local gtk_theme="${GTK_THEME_DARK}"
-  local prefer_dark="1"
-
-  if [[ "${MODE}" == "light" ]]; then
-    gtk_theme="${GTK_THEME_LIGHT}"
-    prefer_dark="0"
-  fi
-
-  ensure_gtk_setting "${HOME}/.config/gtk-3.0/settings.ini" "gtk-decoration-layout" "${layout}"
-  ensure_gtk_setting "${HOME}/.config/gtk-3.0/settings.ini" "gtk-theme-name" "${gtk_theme}"
-  ensure_gtk_setting "${HOME}/.config/gtk-3.0/settings.ini" "gtk-application-prefer-dark-theme" "${prefer_dark}"
-  ensure_gtk_setting "${HOME}/.config/gtk-4.0/settings.ini" "gtk-decoration-layout" "${layout}"
-  ensure_gtk_setting "${HOME}/.config/gtk-4.0/settings.ini" "gtk-theme-name" "${gtk_theme}"
-  ensure_gtk_setting "${HOME}/.config/gtk-4.0/settings.ini" "gtk-application-prefer-dark-theme" "${prefer_dark}"
-}
-
-install_firefox_profile_theme() {
-  local profile_dir="$1"
-  local chrome_dir="${profile_dir}/chrome"
-  local firefox_source="${GTK_REPO}/other/firefox"
-  local user_js="${profile_dir}/user.js"
-
-  need_file "${firefox_source}/userChrome.css"
-  need_file "${firefox_source}/userContent.css"
-  need_file "${firefox_source}/customChrome.css"
-
-  mkdir -p "${chrome_dir}"
-  if [[ ! -e "${chrome_dir}/.mactahoe-backup" ]]; then
-    mkdir -p "${chrome_dir}/.mactahoe-backup"
-    find "${chrome_dir}" -mindepth 1 -maxdepth 1 ! -name '.mactahoe-backup' -exec cp -a {} "${chrome_dir}/.mactahoe-backup/" \;
-  fi
-
-  rm -rf "${chrome_dir}/MacTahoe"
-  cp -a "${firefox_source}/MacTahoe" "${chrome_dir}/"
-  cp -a "${firefox_source}/customChrome.css" "${chrome_dir}/"
-  cp -a "${firefox_source}/userChrome.css" "${chrome_dir}/userChrome.css"
-  cp -a "${firefox_source}/userContent.css" "${chrome_dir}/userContent.css"
-
-  touch "${user_js}"
-  ensure_user_pref "${user_js}" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
-  ensure_user_pref "${user_js}" "browser.tabs.drawInTitlebar" "true"
-  ensure_user_pref "${user_js}" "browser.uidensity" "0"
-  ensure_user_pref "${user_js}" "layers.acceleration.force-enabled" "true"
-  ensure_user_pref "${user_js}" "mozilla.widget.use-argb-visuals" "true"
-  ensure_user_pref "${user_js}" "widget.gtk.rounded-bottom-corners.enabled" "true"
-  ensure_user_pref "${user_js}" "svg.context-properties.content.enabled" "true"
-}
-
-install_thunderbird_profile_theme() {
-  local profile_dir="$1"
-  local chrome_dir="${profile_dir}/chrome"
-  local firefox_source="${GTK_REPO}/other/firefox"
-  local user_js="${profile_dir}/user.js"
-
-  need_file "${firefox_source}/MacTahoe/firefox-titlebutton-compat.css"
-  need_file "${firefox_source}/userChrome.css"
-
-  mkdir -p "${chrome_dir}"
-  if [[ ! -e "${chrome_dir}/.mactahoe-backup" ]]; then
-    mkdir -p "${chrome_dir}/.mactahoe-backup"
-    find "${chrome_dir}" -mindepth 1 -maxdepth 1 ! -name '.mactahoe-backup' -exec cp -a {} "${chrome_dir}/.mactahoe-backup/" \;
-  fi
-
-  rm -rf "${chrome_dir}/MacTahoe"
-  cp -a "${firefox_source}/MacTahoe" "${chrome_dir}/"
-  cp -a "${firefox_source}/userChrome.css" "${chrome_dir}/userChrome.css"
-
-  touch "${user_js}"
-  ensure_user_pref "${user_js}" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
-  ensure_user_pref "${user_js}" "mail.tabs.drawInTitlebar" "true"
-  ensure_user_pref "${user_js}" "browser.tabs.drawInTitlebar" "true"
-}
-
-ensure_user_pref() {
-  local file="$1"
-  local pref="$2"
-  local value="$3"
-  local line="user_pref(\"${pref}\", ${value});"
-
-  if grep -q "^[[:space:]]*user_pref(\"${pref}\"" "${file}"; then
-    sed -i "s|^[[:space:]]*user_pref(\"${pref}\".*|${line}|" "${file}"
-  else
-    printf '%s\n' "${line}" >> "${file}"
-  fi
-}
-
-firefox_profile_dirs() {
-  local base
-  for base in \
-    "${HOME}/.config/mozilla/firefox" \
-    "${HOME}/.mozilla/firefox" \
-    "${HOME}/.var/app/org.mozilla.firefox/.mozilla/firefox" \
-    "${HOME}/snap/firefox/common/.mozilla/firefox"; do
-    [[ -d "${base}" ]] || continue
-    find "${base}" -mindepth 1 -maxdepth 1 -type d \
-      \( -name '*.default*' -o -name '*default-release*' -o -name '*.dev-edition-default' \) \
-      -print
-  done
-}
-
-thunderbird_profile_dirs() {
-  local base
-  for base in \
-    "${HOME}/.thunderbird" \
-    "${HOME}/.config/thunderbird" \
-    "${HOME}/.var/app/org.mozilla.Thunderbird/.thunderbird" \
-    "${HOME}/snap/thunderbird/common/.thunderbird"; do
-    [[ -d "${base}" ]] || continue
-    find "${base}" -mindepth 1 -maxdepth 1 -type d \
-      \( -name '*.default*' -o -name '*default-release*' -o -name '*.default-esr' \) \
-      -print
-  done
-}
-
-apply_panel_contrast_override() {
-  local theme_root="$1"
-  local shell_css="${theme_root}/gnome-shell/gnome-shell.css"
-  local marker="/* MacTheme solid top bar override */"
-
-  [[ -f "${shell_css}" ]] || return 0
-
-  if grep -qF "${marker}" "${shell_css}"; then
-    return 0
-  fi
-
-  cat >> "${shell_css}" <<'EOF'
-
-/* MacTheme solid top bar override */
-#panel {
-  background-color: #242424;
-  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-#panel .panel-corner {
-  -panel-corner-background-color: #242424;
-}
-
-#panel StLabel,
-#panel StIcon,
-#panel .panel-button,
-#panel .panel-button:hover,
-#panel .panel-button:active,
-#panel .panel-button:overview,
-#panel .panel-button:focus,
-#panel .panel-button:checked {
-  color: #ffffff;
-}
-
-#panel:overview,
-#panel.unlock-screen,
-#panel.login-screen,
-#panel.lock-screen {
-  background-color: transparent;
-  box-shadow: none;
-}
-
-#panel:overview .panel-corner,
-#panel.unlock-screen .panel-corner,
-#panel.login-screen .panel-corner,
-#panel.lock-screen .panel-corner {
-  -panel-corner-background-color: transparent;
-}
-EOF
-}
+source "${ROOT_DIR}/scripts/lib/mactahoe-desktop.sh"
 
 user_theme_extension_dirs() {
   find \
@@ -286,29 +100,6 @@ gnome_extensions_knows_uuid() {
   gnome-extensions list 2>/dev/null | grep -Fxq "${uuid}"
 }
 
-dash_to_dock_schema_dir() {
-  local dir
-  for dir in \
-    "${HOME}/.local/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com/schemas" \
-    "/usr/share/gnome-shell/extensions/dash-to-dock@micxgx.gmail.com/schemas"; do
-    [[ -f "${dir}/gschemas.compiled" ]] && {
-      printf '%s\n' "${dir}"
-      return 0
-    }
-  done
-
-  return 1
-}
-
-apply_dock_launcher_position() {
-  local schema_dir
-
-  schema_dir="$(dash_to_dock_schema_dir)" || return 0
-  if gsettings --schemadir "${schema_dir}" writable org.gnome.shell.extensions.dash-to-dock show-apps-at-top >/dev/null 2>&1; then
-    gsettings --schemadir "${schema_dir}" set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true || true
-  fi
-}
-
 os_field() {
   local key="$1"
   if [[ -r /etc/os-release ]]; then
@@ -326,7 +117,7 @@ print_dependency_commands() {
       cat <<'EOF'
 openSUSE:
 sudo zypper refresh
-sudo zypper install git-core glib2-tools gtk3-tools gnome-tweaks gnome-shell-extension-user-theme
+sudo zypper install git-core glib2-tools gtk3-tools python3 gnome-tweaks gnome-shell-extension-user-theme
 
 Optional extension bundle:
 sudo zypper install gnome-shell-extensions
@@ -336,13 +127,13 @@ EOF
       cat <<'EOF'
 Debian/Ubuntu:
 sudo apt update
-sudo apt install git libglib2.0-bin gtk-update-icon-cache gnome-shell-extensions gnome-tweaks
+sudo apt install git libglib2.0-bin gtk-update-icon-cache python3 gnome-shell-extensions gnome-tweaks
 EOF
       ;;
     *)
       cat <<'EOF'
 Generic GNOME prerequisites:
-- git
+- git and python3
 - gsettings / GLib tools
 - gtk-update-icon-cache / GTK tools
 - gnome-tweaks
@@ -447,6 +238,8 @@ while [[ $# -gt 0 ]]; do
       INSTALL_ALL_GTK_RELEASES="yes"
       shift
       ;;
+    --install-toshy) INSTALL_TOSHY="yes"; shift ;;
+    --no-summary) SHOW_SUMMARY="no"; shift ;;
     --help|-h)
       usage
       exit 0
@@ -469,16 +262,12 @@ need_file "${CURSOR_REPO}/install.sh"
 
 mkdir -p "${THEME_DIR}" "${ICON_DIR}"
 
-log "Installing GTK themes into ${THEME_DIR}"
-if [[ "${INSTALL_ALL_GTK_RELEASES}" == "yes" ]]; then
-  find "${GTK_REPO}/release" -maxdepth 1 -type f -name 'MacTahoe-*.tar.xz' -print0 |
-    while IFS= read -r -d '' archive; do
-      tar -xJf "${archive}" -C "${THEME_DIR}"
-    done
-else
-  tar -xJf "${GTK_REPO}/release/${GTK_THEME_DARK}.tar.xz" -C "${THEME_DIR}"
-  tar -xJf "${GTK_REPO}/release/${GTK_THEME_LIGHT}.tar.xz" -C "${THEME_DIR}"
-fi
+command_exists python3 || die "python3 is required for verified theme installation."
+log "Installing and verifying GTK theme files"
+theme_args=(themes --full --mode "${MODE}")
+[[ "${INSTALL_ALL_GTK_RELEASES}" == "yes" ]] && theme_args+=(--all)
+[[ "${INSTALL_LIBADWAITA}" == "no" ]] && theme_args+=(--no-libadwaita)
+python3 "${ROOT_DIR}/scripts/lib/mactahoe-files.py" "${theme_args[@]}"
 
 log "Applying solid top bar contrast override"
 find "${THEME_DIR}" -mindepth 1 -maxdepth 1 -type d -name 'MacTahoe*' -print0 |
@@ -499,26 +288,8 @@ bash "${ICON_REPO}/install.sh" "${icon_args[@]}"
 log "Installing cursor themes into ${ICON_DIR}"
 bash "${CURSOR_REPO}/install.sh" -d "${ICON_DIR}"
 
-if [[ "${INSTALL_LIBADWAITA}" == "yes" ]]; then
-  log "Installing GTK 4/libadwaita files into ~/.config/gtk-4.0"
-  if [[ "${MODE}" == "light" ]]; then
-    libadwaita_source="${THEME_DIR}/${GTK_THEME_LIGHT}/gtk-4.0"
-  else
-    libadwaita_source="${THEME_DIR}/${GTK_THEME_DARK}/gtk-4.0"
-  fi
-  need_file "${libadwaita_source}/gtk.css"
-  mkdir -p "${HOME}/.config/gtk-4.0"
-  backup_dir="${HOME}/.config/gtk-4.0.mactahoe-backup"
-  if [[ ! -e "${backup_dir}" ]]; then
-    mkdir -p "${backup_dir}"
-    find "${HOME}/.config/gtk-4.0" -mindepth 1 -maxdepth 1 -exec cp -a {} "${backup_dir}/" \;
-  fi
-  find "${HOME}/.config/gtk-4.0" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-  cp -a "${libadwaita_source}/." "${HOME}/.config/gtk-4.0/"
-fi
-
 log "Refreshing GTK and Mozilla profile settings"
-profile_refresh_args=(--mode "${MODE}")
+profile_refresh_args=(--mode "${MODE}" --no-theme-files --no-desktop --no-summary)
 if [[ "${INSTALL_FIREFOX}" == "no" ]]; then
   profile_refresh_args+=(--no-firefox)
 fi
@@ -555,7 +326,7 @@ if [[ "${APPLY_SETTINGS}" == "yes" ]]; then
   gsettings set org.gnome.desktop.interface cursor-theme "${CURSOR_THEME}"
   gsettings set org.gnome.desktop.interface color-scheme "${color_scheme}" || true
   gsettings set org.gnome.desktop.wm.preferences button-layout 'close,minimize,maximize:'
-  apply_dock_launcher_position
+  apply_desktop_adjustments
 
   if user_theme_uuid="$(first_user_theme_uuid)"; then
     if gnome_extensions_knows_uuid "${user_theme_uuid}"; then
@@ -566,11 +337,8 @@ if [[ "${APPLY_SETTINGS}" == "yes" ]]; then
     elif command_exists gnome-extensions; then
       warn "User Themes is installed on disk (${user_theme_uuid}), but GNOME Shell has not loaded it yet. Log out and back in, then rerun this script."
     fi
-    if gsettings writable org.gnome.shell.extensions.user-theme name >/dev/null 2>&1; then
-      gsettings set org.gnome.shell.extensions.user-theme name "${applied_gtk_theme}" || true
-    else
-      warn "User Themes extension was found (${user_theme_uuid}), but its settings schema is not active yet. Log out/in or restart GNOME Shell, then rerun this script."
-    fi
+    set_extension_preference "${user_theme_uuid}" \
+      org.gnome.shell.extensions.user-theme name "${applied_gtk_theme}"
   else
     print_shell_theme_help
   fi
@@ -578,4 +346,6 @@ else
   log "Skipping GNOME settings because --no-apply was used"
 fi
 
+warn "Fully restart Firefox, Ghostty, and other themed applications to load the installed styles."
 log "MacTahoe install complete"
+finish_mactahoe_setup

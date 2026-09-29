@@ -5,8 +5,13 @@
 }
 
 @media (-moz-gtk-csd-transparency-available) {
-	:root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) body,
-	:root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]):is([sizemode="maximized"], [tiled]) dialog::backdrop {
+	/* Keep the content clip identical when restoring a maximized/tiled window.
+	 * Normal windows otherwise fall back to Firefox's GTK environment radius.
+	 * The installed GTK decoration must also use this radius (refresh the GTK
+	 * release files as well as this profile override after a theme update).
+	 */
+	:root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]) body,
+	:root[customtitlebar]:not([inFullscreen], [sizemode="fullscreen"]) dialog::backdrop {
 		border-radius: var(--mactahoe-window-radius) !important;
 		overflow: clip !important;
 	}
