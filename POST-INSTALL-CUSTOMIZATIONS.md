@@ -298,6 +298,63 @@ MX Keys S modifier mapping and preserves the screenshot shortcut. On Wayland it 
 needs a supported focused-window GNOME extension; current links and guidance
 are maintained in `README.md`.
 
+## GNOME GPU usage top-bar setup (Ramon and Garagebox)
+
+Added manually on Ramon and Garagebox on September 30, 2026. Both machines
+use the **Executor** GNOME extension to show live utilization for the R9700
+in TheRidge directly in their GNOME top bars. This is a reference for manual
+setup; deploy and refresh do not configure it.
+
+### Prerequisites
+
+Install Executor on each display machine. TheRidge needs `rocm-smi` and `jq`;
+the display machine needs `ssh`, `timeout`, and `awk`.
+
+Run this test from Ramon or Garagebox:
+
+```bash
+ssh theridge true
+```
+
+It should complete without asking for a password or host-key confirmation.
+The `theridge` SSH destination must resolve and allow noninteractive access
+from each machine.
+
+### Executor command
+
+Paste this command into Executor on Ramon and Garagebox:
+
+```bash
+timeout 2 ssh -o BatchMode=yes -o ConnectTimeout=1 theridge 'rocm-smi --showuse --json 2>/dev/null | jq -r '\''to_entries[0].value["GPU use (%)"]'\''' 2>/dev/null | awk '{print "R9700 "$1"%"}'
+```
+
+Expected output, with utilization varying over time:
+
+```text
+R9700 64%
+```
+
+Recommended Executor settings:
+
+- Refresh interval: 1–2 seconds.
+- Display: command output.
+- Position: left side of the GNOME top bar, if desired.
+
+The command SSHes to TheRidge, runs `rocm-smi`, uses `jq` to extract
+`GPU use (%)` from the first JSON entry, and formats it as `R9700 NN%`.
+This assumes the first entry is the R9700. SSH and `rocm-smi` error output is
+suppressed; if SSH produces no output, the top-bar item is blank.
+
+The SSH options and timeout keep Executor from hanging when TheRidge is
+unavailable:
+
+- `BatchMode=yes` prevents interactive password prompts.
+- `ConnectTimeout=1` limits the SSH connection wait to one second.
+- `timeout 2` stops a stuck SSH process after two seconds.
+
+For exact control over the Executor item's position among GNOME top-bar
+items, optionally use **Top Bar Organizer Plus**.
+
 ## Verified state on the source machine
 
 The audit found the following theme-related state:

@@ -6,6 +6,10 @@ single deploy script for GNOME systems.
 For the complete audit of post-install changes and the exact current-state
 ledger, see [POST-INSTALL-CUSTOMIZATIONS.md](POST-INSTALL-CUSTOMIZATIONS.md).
 
+The ledger also records the manual
+[Executor GPU usage top-bar setup on Ramon and Garagebox](POST-INSTALL-CUSTOMIZATIONS.md#gnome-gpu-usage-top-bar-setup-ramon-and-garagebox)
+for monitoring TheRidge's R9700.
+
 ## Install For The Current User
 
 On a fresh machine, print the prerequisite commands first:
