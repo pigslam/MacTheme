@@ -24,6 +24,7 @@ INSTALL_FLATPAK="yes"
 ICON_ACCENT="default"
 ICON_BOLD="no"
 PRINT_DEPS="no"
+CONFIGURE_TOSHY="no"
 
 usage() {
   cat <<'EOF'
@@ -46,6 +47,7 @@ Options:
   --no-thunderbird           Do not modify detected Thunderbird profiles
   --flatpak                  Refresh known installed Flatpak theme access. Default
   --no-flatpak               Do not modify Flatpak overrides
+  --toshy-mx-keys-s           Apply Ramon's MX Keys S mapping to existing Toshy; restart unless --no-apply
   --no-apply                 Install files but do not change GNOME settings
   --gtk-minimal              Install only Light and Dark GTK releases. Default
   --gtk-all                  Install all bundled GTK release variants
@@ -226,6 +228,10 @@ while [[ $# -gt 0 ]]; do
       INSTALL_FLATPAK="no"
       shift
       ;;
+    --toshy-mx-keys-s)
+      CONFIGURE_TOSHY="yes"
+      shift
+      ;;
     --no-apply)
       APPLY_SETTINGS="no"
       shift
@@ -347,5 +353,11 @@ else
 fi
 
 warn "Fully restart Firefox, Ghostty, and other themed applications to load the installed styles."
+if [[ "${CONFIGURE_TOSHY}" == "yes" ]]; then
+  toshy_args=()
+  [[ "${APPLY_SETTINGS}" == "yes" ]] && toshy_args+=(--restart)
+  bash "${ROOT_DIR}/scripts/configure-toshy-mx-keys-s.sh" "${toshy_args[@]}"
+fi
+
 log "MacTahoe install complete"
 finish_mactahoe_setup

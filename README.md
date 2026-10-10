@@ -96,34 +96,70 @@ interactive. Default theme runs do not download or install Toshy; even with
 If Toshy fails, the completed theme setup remains and the command exits nonzero.
 The MX Keys S policy is a separate opt-in after installation.
 
-Follow Toshy's current installation and compatibility guidance when choosing
-an extension. The optional `scripts/configure-toshy-mx-keys-s.sh` applies the
-small, reproducible MX Keys S modifier policy used by this workstation. It
-edits only Toshy's supported editable config slices plus the two Windows GUI
-modifier entries that Toshy does not expose as preferences, and makes a
-timestamped backup before changing anything. It preserves the existing
-screenshot key mapping and clears any stale global Toshy keyboard-type
-override so the MX Keys S can be classified automatically. The two device
-names currently used by this model are matched: `Logitech USB Receiver` for
-Bolt and `MX Keys S` for Bluetooth.
-
-Run it after installing Toshy and connect the keyboard through the Bolt
-receiver first:
-
-```bash
-./scripts/configure-toshy-mx-keys-s.sh
-toshy-services-restart
-```
-
-The policy keeps physical Ctrl as Ctrl, leaves the middle Start/Opt key as
-Linux Super, retains Toshy's normal Command behavior for the physical
-Alt/Cmd key, and maps that key with F4 to Alt+F4. The Bolt receiver and the
-Bluetooth representation share this one policy; no duplicated shortcut map
-is maintained.
+For the verified MX Keys S modifier mapping, see
+[Toshy MX Keys S Command/Windows Fix](#toshy-mx-keys-s-commandwindows-fix)
+below. The helper preserves existing screenshot mappings and preferences.
 
 Firefox and Thunderbird draw their own titlebar controls, so the deploy script
 installs a small `userChrome` override into detected profiles. Launch those apps
 once before deploying so their profiles exist, then restart them afterwards.
+
+## Toshy MX Keys S Command/Windows Fix
+
+Confirmed on Ramon and tested by the user on KVMBOx on October 9, 2026.
+A visible Toshy tray icon does not mean the keyboard has the intended mapping.
+The default Windows keyboard mapping reversed the desired Command/Super roles
+for this MX Keys S in its current keyboard mode.
+
+After installing Toshy and completing its desktop integration, run:
+
+```bash
+./scripts/configure-toshy-mx-keys-s.sh --restart
+```
+
+Or include it in theme setup:
+
+```bash
+./scripts/deploy-mactahoe.sh --toshy-mx-keys-s
+```
+
+Toshy must already be installed; this option does not install it. It is opt-in
+because the physical key codes depend on the keyboard's mode. With `--no-apply`,
+the deploy option writes the mapping but leaves restarting Toshy to you.
+Python 3 is required. The helper honors `XDG_CONFIG_HOME`.
+
+| Physical key in the verified keyboard mode | Input code | Result |
+| --- | --- | --- |
+| Ctrl | LEFT_CTRL | Ctrl |
+| Middle Start/Opt | LEFT_ALT | Linux Super/Windows |
+| Alt/Cmd beside the spacebar | LEFT_META | Toshy Command (RIGHT_CTRL) |
+
+The policy matches `Logitech USB Receiver` (Bolt) and `MX Keys S` (Bluetooth),
+ignoring case, in both ordinary apps and terminals. The generic receiver name
+can also match other Logitech keyboards; use this option only for this intended
+layout. Other keyboard names retain their existing mappings. Remote application
+contexts retain Toshy's existing behavior.
+
+The helper preserves the installed Toshy version and unrelated customizations.
+It adds a device helper and custom modmap in Toshy's editable slices and excludes
+this keyboard from six default Windows modifier maps. Preferences are unchanged:
+use automatic keyboard detection, with **Left Cmd is Super & Cmd** and
+**Left Opt is Super & Opt** disabled (the verified settings).
+
+Before writing, it validates the config and saves a timestamped, byte-for-byte
+backup in `toshy_config.py.mactheme-backups/` beside the config. Repeated runs
+make no changes when the mapping is already present. Missing expected maps or
+conflicting custom helper/map definitions cause it to stop for manual review.
+Toshy upgrades may remove the six exclusions outside editable slices; rerun
+this helper after upgrading to restore them without replacing the newer config.
+
+After restarting, test Alt/Cmd+C and Alt/Cmd+V, Start/Opt for the overview, and
+normal Ctrl behavior, including in a terminal. If the keyboard mode or device
+changes, verify the emitted key codes before applying additional swaps.
+
+To undo, copy the desired timestamped backup over `toshy_config.py` in the Toshy
+config directory, then run `toshy-services-restart`. Do not restore an older full
+backup over a subsequently upgraded config without reviewing the differences.
 
 ## Refresh Profiles
 
