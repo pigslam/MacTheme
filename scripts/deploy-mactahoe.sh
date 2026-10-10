@@ -327,6 +327,10 @@ if [[ "${APPLY_SETTINGS}" == "yes" ]]; then
   fi
 
   log "Applying GNOME settings"
+  # On a horizontal dock, the leading ("top") position is the left edge.
+  if gsettings list-schemas | grep -Fx org.gnome.shell.extensions.dash-to-dock >/dev/null; then
+    gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
+  fi
   gsettings set org.gnome.desktop.interface gtk-theme "${applied_gtk_theme}"
   gsettings set org.gnome.desktop.interface icon-theme "${ICON_THEME}"
   gsettings set org.gnome.desktop.interface cursor-theme "${CURSOR_THEME}"

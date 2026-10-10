@@ -161,6 +161,16 @@ To undo, copy the desired timestamped backup over `toshy_config.py` in the Toshy
 config directory, then run `toshy-services-restart`. Do not restore an older full
 backup over a subsequently upgraded config without reviewing the differences.
 
+## Show Apps Button Position
+
+The Show Apps button sits on the left of the horizontal dock. Theme setup
+applies `show-apps-at-top=true` when Ubuntu Dock or Dash to Dock is installed
+(unless `--no-apply` is selected). To apply it separately:
+
+```bash
+gsettings set org.gnome.shell.extensions.dash-to-dock show-apps-at-top true
+```
+
 ## Refresh Profiles
 
 After installing Firefox/Thunderbird later, creating new profiles, installing a
