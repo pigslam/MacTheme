@@ -141,10 +141,13 @@ layout. Other keyboard names retain their existing mappings. Remote application
 contexts retain Toshy's existing behavior.
 
 The helper preserves the installed Toshy version and unrelated customizations.
-It adds a device helper and custom modmap in Toshy's editable slices and excludes
-this keyboard from six default Windows modifier maps. Preferences are unchanged:
-use automatic keyboard detection, with **Left Cmd is Super & Cmd** and
-**Left Opt is Super & Opt** disabled (the verified settings).
+It adds a device helper and custom modmap in Toshy's editable slices, excludes
+this keyboard from six default Windows modifier maps, and adds a terminal-only
+`Cmd+A` → `Ctrl+Shift+A` rule for Select All. That extra rule is necessary
+because upstream Toshy intentionally leaves terminal `Cmd+A` unmapped while
+providing `Cmd+C` and `Cmd+V`. Preferences are unchanged: use automatic keyboard
+detection, with **Left Cmd is Super & Cmd** and **Left Opt is Super & Opt**
+disabled (the verified settings).
 
 Before writing, it validates the config and saves a timestamped, byte-for-byte
 backup in `toshy_config.py.mactheme-backups/` beside the config. Repeated runs
@@ -153,9 +156,12 @@ conflicting custom helper/map definitions cause it to stop for manual review.
 Toshy upgrades may remove the six exclusions outside editable slices; rerun
 this helper after upgrading to restore them without replacing the newer config.
 
-After restarting, test Alt/Cmd+C and Alt/Cmd+V, Start/Opt for the overview, and
-normal Ctrl behavior, including in a terminal. If the keyboard mode or device
-changes, verify the emitted key codes before applying additional swaps.
+After restarting, test Alt/Cmd+A, Alt/Cmd+C, and Alt/Cmd+V, Start/Opt for the
+overview, and normal Ctrl behavior, including in a terminal. The terminal
+Select All rule targets Toshy's terminal context and therefore follows the
+focused-window classification supplied by the GNOME extension. If the keyboard
+mode or device changes, verify the emitted key codes before applying additional
+swaps.
 
 To undo, copy the desired timestamped backup over `toshy_config.py` in the Toshy
 config directory, then run `toshy-services-restart`. Do not restore an older full

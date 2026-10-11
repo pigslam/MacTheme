@@ -164,6 +164,40 @@ MOCK
         self.assertEqual(result.returncode, 23)
         self.assertIn('Theme setup completed, but Toshy installation did not finish', result.stdout)
 
+    def test_mx_keys_s_helper_adds_terminal_select_all_idempotently(self):
+        names = [
+            f'Cond modmap - {context} - Win kbd{suffix}'
+            for context in ('GUI', 'Terms')
+            for suffix in ('', ' - Cmd held', ' - Opt held')
+        ]
+        modmaps = ''.join(
+            f'''modmap("{name}", {{}}, when = lambda ctx:\n'''
+            '    ctx_kbd_is_windows and\n'
+            '    True\n'
+            ')\n\n'
+            for name in names
+        )
+        config = self.write('.config/toshy/toshy_config.py', f'''
+###  SLICE_MARK_START: user_custom_functions
+###  SLICE_MARK_END: user_custom_functions
+{modmaps}
+###  SLICE_MARK_START: user_custom_modmaps
+###  SLICE_MARK_END: user_custom_modmaps
+###  SLICE_MARK_START: user_apps
+###  SLICE_MARK_END: user_apps
+''')
+        helper = str(ROOT / 'scripts/configure-toshy-mx-keys-s.sh')
+        self.run_cmd('bash', helper)
+        first = config.read_bytes()
+        text = first.decode()
+        self.assertEqual(text.count('MacTheme MX Keys S - Ramon modifiers'), 1)
+        self.assertEqual(text.count('MacTheme MX Keys S - terminal Select All'), 1)
+        self.assertIn('C("RC-A"): C("C-Shift-A")', text)
+        self.assertEqual(text.count('not mactheme_is_mx_keys_s(ctx)'), 6)
+        self.assertIn('already installed', self.run_cmd('bash', helper))
+        self.assertEqual(config.read_bytes(), first)
+        self.assertEqual(len(list(config.with_name(config.name + '.mactheme-backups').iterdir())), 1)
+
     def test_full_deploy_no_apply(self):
         # Exercise the real deploy orchestration, stubbing only icon/cursor installers.
         repo = self.base / 'repo'

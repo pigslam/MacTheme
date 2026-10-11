@@ -294,9 +294,12 @@ Commits `879157f2` and `468aa1fe` documented Toshy as an optional companion.
 Toshy is not installed by default. Deploy/refresh offer `--install-toshy` to
 launch the upstream interactive installer after theme setup. The
 separate optional `scripts/configure-toshy-mx-keys-s.sh` reproduces the confirmed
-MX Keys S modifier mapping and preserves the screenshot shortcut. On Wayland it also
-needs a supported focused-window GNOME extension; current links and guidance
-are maintained in `README.md`.
+MX Keys S modifier mapping, preserves the screenshot shortcut, and restores
+terminal Select All by mapping `Cmd+A` to `Ctrl+Shift+A`. Upstream Toshy maps
+terminal `Cmd+C/V` but deliberately leaves `Cmd+A` disabled, so the explicit
+terminal rule is part of the verified MacTheme policy. On Wayland it also needs
+a supported focused-window GNOME extension; current links and guidance are
+maintained in `README.md`.
 
 ## GNOME GPU usage top-bar setup (Ramon and Garagebox)
 

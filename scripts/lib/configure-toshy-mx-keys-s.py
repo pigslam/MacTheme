@@ -31,6 +31,19 @@ modmap("MacTheme MX Keys S - Ramon modifiers", {
 )
 
 '''
+TERMINAL_SELECT_ALL = '''
+# MacTheme: Toshy intentionally leaves terminal Cmd+A unmapped by default.
+# Ptyxis and other GTK terminals use Ctrl+Shift+A for Select All.
+keymap("MacTheme MX Keys S - terminal Select All", {
+    C("RC-A"): C("C-Shift-A"),
+}, when = lambda ctx:
+    cnfg.screen_has_focus and
+    ctx_ovl_terminal_ergo and
+    mactheme_is_mx_keys_s(ctx) and
+    not ctx_app_is_remote
+)
+
+'''
 
 def require(condition, message):
     if not condition:
@@ -78,6 +91,17 @@ def transform(original):
                 'Existing Ramon modifier map differs; review manually')
     else:
         text = insert_slice(text, 'user_custom_modmaps', CUSTOM)
+    keymap_name = 'MacTheme MX Keys S - terminal Select All'
+    keymap_nodes = [n for n in ast.parse(text).body if isinstance(n, ast.Expr)
+                    and isinstance(n.value, ast.Call) and n.value.args
+                    and isinstance(n.value.args[0], ast.Constant)
+                    and n.value.args[0].value == keymap_name]
+    if keymap_nodes:
+        require(len(keymap_nodes) == 1
+                and ast.dump(keymap_nodes[0]) == ast.dump(ast.parse(TERMINAL_SELECT_ALL).body[0]),
+                'Existing terminal Select All map differs; review manually')
+    else:
+        text = insert_slice(text, 'user_apps', TERMINAL_SELECT_ALL)
     compile(text, '<toshy_config>', 'exec')
     return text
 
