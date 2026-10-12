@@ -301,6 +301,28 @@ terminal rule is part of the verified MacTheme policy. On Wayland it also needs
 a supported focused-window GNOME extension; current links and guidance are
 maintained in `README.md`.
 
+### Activities Overview shortcut and hot corner
+
+On October 11, 2026, the Windows/Start key was restored to open GNOME's
+Activities Overview, which shows previews of running windows. Toshy's installer
+had disabled the `org.gnome.mutter` `overlay-key` setting. Restoring it to
+`Super_L` preserved the existing Toshy Command-key mappings, and the user
+confirmed that the Windows/Start key worked again.
+
+On October 12, 2026, GNOME's hot corner was disabled at the user's request.
+The Windows/Start key remains enabled for opening Activities Overview.
+
+To reproduce these manual desktop settings:
+
+```bash
+gsettings set org.gnome.mutter overlay-key 'Super_L'
+gsettings set org.gnome.desktop.interface enable-hot-corners false
+```
+
+The applied values were verified as `'Super_L'` and `false`, respectively.
+Deploy and refresh do not currently apply these settings. Recheck `overlay-key`
+after reinstalling Toshy, since its installer disables that binding.
+
 ## GNOME GPU usage top-bar setup (Ramon and Garagebox)
 
 Added manually on Ramon and Garagebox on September 30, 2026. Both machines
